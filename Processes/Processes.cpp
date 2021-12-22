@@ -5,8 +5,15 @@
 #include "Processes.h"
 
 #define MAX_LOADSTRING 100
-#define CMD_BUTTON_1 1001
-#define CMD_BUTTON_CLOSE 1002
+#define CMD_BUTTON_START_NOTEPAD 1001
+#define CMD_BUTTON_STOP_NOTEPAD 1002
+#define CMD_BUTTON_START_MYSTAT 1003
+#define CMD_BUTTON_STOP_MYSTAT 1004
+#define CMD_BUTTON_START_CALC 1005
+#define CMD_BUTTON_STOP_CALC 1006
+#define CMD_BUTTON_START_CMD 1007
+#define CMD_BUTTON_STOP_CMD 1008
+
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -19,8 +26,14 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-void                ButtonClick();
-void                ButtonClose();
+void                NotePadStart();
+void                NotePadStop();
+void                MyStatStart();
+void                MyStatStop();
+void                CalcStart();
+void                CalcStop();
+void                CmdStart();
+void                CmdStop();
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -133,10 +146,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
         list = CreateWindowW(L"listbox", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | WS_HSCROLL,
             100, 10, 300, 400, hWnd, 0, hInst, NULL);
-        CreateWindowW(L"Button", L"Notepad", WS_VISIBLE | WS_CHILD | WS_BORDER,
-            10, 10, 75, 23, hWnd, (HMENU)CMD_BUTTON_1, hInst, NULL);
-        CreateWindowW(L"Button", L"Notepad", WS_VISIBLE | WS_CHILD | WS_BORDER,
-            10, 40, 75, 23, hWnd, (HMENU)CMD_BUTTON_CLOSE, hInst, NULL);
+
+        CreateWindowW(L"Static", L"Notepad", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER,
+            10, 10, 75, 23, hWnd, 0, hInst, NULL);
+        CreateWindowW(L"Button", L"Start", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 30, 75, 23, hWnd, (HMENU)CMD_BUTTON_START_NOTEPAD, hInst, NULL);
+        CreateWindowW(L"Button", L"Stop", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 50, 75, 23, hWnd, (HMENU)CMD_BUTTON_STOP_NOTEPAD, hInst, NULL);
+        ///////////////////////////////////////////////////////////////////////////
+        CreateWindowW(L"Static", L"MyStat", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER,
+            10, 80, 75, 23, hWnd, 0, hInst, NULL);
+        CreateWindowW(L"Button", L"Start", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 100, 75, 23, hWnd, (HMENU)CMD_BUTTON_START_MYSTAT, hInst, NULL);
+        CreateWindowW(L"Button", L"Stop", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 120, 75, 23, hWnd, (HMENU)CMD_BUTTON_STOP_MYSTAT, hInst, NULL);
+        ///////////////////////////////////////////////////////////////////////////
+        CreateWindowW(L"Static", L"Calc", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER,
+            10, 150, 75, 23, hWnd, 0, hInst, NULL);
+        CreateWindowW(L"Button", L"Start", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 170, 75, 23, hWnd, (HMENU)CMD_BUTTON_START_CALC, hInst, NULL);
+        CreateWindowW(L"Button", L"Stop", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 190, 75, 23, hWnd, (HMENU)CMD_BUTTON_STOP_CALC, hInst, NULL);
+        ///////////////////////////////////////////////////////////////////////////
+        CreateWindowW(L"Static", L"CMD", WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER,
+            10, 220, 75, 23, hWnd, 0, hInst, NULL);
+        CreateWindowW(L"Button", L"Start", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 240, 75, 23, hWnd, (HMENU)CMD_BUTTON_START_CMD, hInst, NULL);
+        CreateWindowW(L"Button", L"Stop", WS_VISIBLE | WS_CHILD | WS_BORDER,
+            10, 260, 75, 23, hWnd, (HMENU)CMD_BUTTON_STOP_CMD, hInst, NULL);
         break;
     case WM_COMMAND:
         {
@@ -144,11 +181,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Parse the menu selections:
             switch (wmId)
             {
-            case CMD_BUTTON_1:
-                ButtonClick();
+            case CMD_BUTTON_START_NOTEPAD:
+                NotePadStart();
                 break;
-            case CMD_BUTTON_CLOSE:
-                ButtonClose();
+            case CMD_BUTTON_STOP_NOTEPAD:
+                NotePadStop();
+                break;
+            case CMD_BUTTON_START_MYSTAT:
+                MyStatStart();
+                break;
+            case CMD_BUTTON_STOP_MYSTAT:
+                MyStatStop();
+                break;
+            case CMD_BUTTON_START_CALC:
+                CalcStart();
+                break;
+            case CMD_BUTTON_STOP_CALC:
+                CalcStop();
+                break;
+            case CMD_BUTTON_START_CMD:
+                CmdStart();
+                break;
+            case CMD_BUTTON_STOP_CMD:
+                CmdStop();
                 break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
@@ -198,13 +253,38 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-STARTUPINFO sinfo;
+struct INFO {
+
+    PROCESS_INFORMATION pInfo;
+    STARTUPINFO sInfo;
+
+    INFO() {
+
+        ZeroMemory(&pInfo, sizeof(PROCESS_INFORMATION));
+        ZeroMemory(&sInfo, sizeof(STARTUPINFO));
+
+    }
+
+};
+
+DWORD WINAPI NewProcess(LPVOID param) {
 
 
-PROCESS_INFORMATION pinfo;
+    INFO* app = (INFO*)param;
+   if( WaitForSingleObject(app->pInfo.hProcess, 60000))
+   { 
+    TerminateProcess(app->pInfo.hProcess, 0);
+    SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"you've not used this app for 1 minute, so it has been closed");
+    SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"process stopped");
+    CloseHandle(app->pInfo.hThread);
+    CloseHandle(app->pInfo.hProcess);
+   }
+    return 0;
+}
 
+INFO Notepad;
 
-void  ButtonClick() {
+void  NotePadStart() {
 
    
 
@@ -213,32 +293,122 @@ void  ButtonClick() {
         NULL,
         NULL,
         NULL,
-        FALSE,
+        TRUE,
+        
         0,
         NULL,
         L"C:\\Windows\\",
-        &sinfo,
-        &pinfo
+        &Notepad.sInfo,
+        &Notepad.pInfo
     )) {
-        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"Works !");
-        WaitForSingleObject(pinfo.hProcess, 2000);
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"notepad works!");
+        CreateThread(NULL, 0, NewProcess, &Notepad, 0, NULL);
       
-        
-        
-        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"Stopped !");
+  
     }
     else {
-        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"Error !");
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"notepad Error!");
     }
 }
 
-void ButtonClose()
+void NotePadStop()
 {
     
-    WaitForSingleObject(pinfo.hProcess, 2000);
-    if (TerminateProcess(pinfo.hProcess, 1000)) {
-        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"Closed !");
-    };
-    CloseHandle(pinfo.hThread);
-    CloseHandle(pinfo.hProcess);
+   
+    if (TerminateProcess(Notepad.pInfo.hProcess, 0)) {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"notepad stopped");
+
+        CloseHandle(Notepad.pInfo.hThread);
+        CloseHandle(Notepad.pInfo.hProcess);
+    }
 }
+
+INFO MyStat;
+void  MyStatStart() {
+
+
+    if (CreateProcessW(L"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        (LPWSTR)L"\\ https://mystat.itstep.org/en/auth/login/index?returnUrl=%2Fen%2Fmain%2Fdashboard%2Fpage%2Findex",
+        NULL, NULL, TRUE, IDLE_PRIORITY_CLASS | CREATE_NEW_PROCESS_GROUP,
+        NULL, NULL, &MyStat.sInfo, &MyStat.pInfo)) {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"mystat works!");
+        CreateThread(NULL, 0, NewProcess, &MyStat, 0, NULL);
+    }
+    else {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"mystat error");
+    }
+}
+
+void MyStatStop()
+{
+
+
+    if (TerminateProcess(MyStat.pInfo.hProcess, 0)) {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"mystat stopped");
+
+        CloseHandle(MyStat.pInfo.hThread);
+        CloseHandle(MyStat.pInfo.hProcess);
+    }
+}
+
+INFO calc;
+
+void CalcStart() {
+
+    if (CreateProcessW(L"C:\\Windows\\SysWOW64\\calc.exe",
+        NULL, NULL, NULL, TRUE, IDLE_PRIORITY_CLASS | CREATE_NEW_PROCESS_GROUP,
+        NULL, NULL, &calc.sInfo, &calc.pInfo)) {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"calc works!");
+        CreateThread(NULL, 0, NewProcess, &calc, 0, NULL);
+    }
+    else {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"calc error");
+    }
+}
+
+void CalcStop() {
+
+    if (TerminateProcess(calc.pInfo.hProcess, 0)) {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"calc stopped");
+
+        CloseHandle(calc.pInfo.hThread);
+        CloseHandle(calc.pInfo.hProcess);
+    }
+}
+
+
+INFO cmd;
+
+void CmdStart() {
+
+    if (CreateProcessW(L"C:\\Windows\\SysWOW64\\cmd.exe", 
+        NULL, NULL, NULL, TRUE, IDLE_PRIORITY_CLASS | CREATE_NEW_PROCESS_GROUP,
+        NULL, NULL, &cmd.sInfo, &cmd.pInfo)) {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"cmd works!");
+        CreateThread(NULL, 0, NewProcess, &cmd, 0, NULL);
+    }
+    else {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"cmd error");
+    }
+}
+
+void CmdStop() {
+
+    if (TerminateProcess(cmd.pInfo.hProcess, 0)) {
+
+        SendMessageW(list, LB_ADDSTRING, 100, (LPARAM)L"cmd stopped");
+
+        CloseHandle(cmd.pInfo.hThread);
+        CloseHandle(cmd.pInfo.hProcess);
+    }
+}
+
